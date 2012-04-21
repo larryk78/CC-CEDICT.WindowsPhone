@@ -9,9 +9,9 @@ using System.Resources;
 [assembly: AssemblyTitle("CC_CEDICT.WindowsPhone")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("NOKIA")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CC_CEDICT.WindowsPhone")]
-[assembly: AssemblyCopyright("Copyright © NOKIA 2012")]
+[assembly: AssemblyCopyright("Copyright © Larry Knibb 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,6 +32,6 @@ using System.Resources;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.1.0")]
+[assembly: AssemblyFileVersion("0.1.0")]
 [assembly: NeutralResourcesLanguageAttribute("en-US")]
