@@ -41,6 +41,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows" />
     <Reference Include="system" />
     <Reference Include="System.Core" />
@@ -53,6 +54,7 @@
     <Compile Include="Dictionary.cs" />
     <Compile Include="Indexer.cs" />
     <Compile Include="Pinyin.cs" />
+    <Compile Include="PinyinIndex.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Record.cs" />
   </ItemGroup>

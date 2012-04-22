@@ -13,11 +13,10 @@ namespace CC_CEDICT.WindowsPhone
 
         public Pinyin(string input)
         {
-            Original = input;
-            input = input.Replace("u:", "v").Replace("U:", "V");
+            Original = input.Replace("u:", "v").Replace("U:", "V");
 
             Regex pattern = new Regex("^([a-zA-Z]+)([1-5])$");
-            Match match = pattern.Match(input);
+            Match match = pattern.Match(Original);
             if (match.Success)
             {
                 Syllable = match.Groups[1].Value;
@@ -26,7 +25,7 @@ namespace CC_CEDICT.WindowsPhone
             }
 
             pattern = new Regex("^([a-zA-Z]+)$"); // TODO: this could be more discerning
-            match = pattern.Match(input);
+            match = pattern.Match(Original);
             if (match.Success)
             {
                 Syllable = match.Groups[1].Value;

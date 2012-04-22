@@ -83,5 +83,12 @@ namespace Test
         {
             MessageBox.Show(String.Format("Indexing took {0} seconds.", ((TimeSpan)(DateTime.Now - start)).TotalSeconds));
         }
+
+        private void ReadIndexButton_Click(object sender, RoutedEventArgs e)
+        {
+            start = DateTime.Now;
+            PinyinIndex pi = new PinyinIndex();
+            MessageBox.Show(String.Format("Deserialization took {0} seconds.", ((TimeSpan)(DateTime.Now - start)).TotalSeconds));
+        }
     }
 }
