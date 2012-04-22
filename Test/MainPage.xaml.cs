@@ -51,9 +51,9 @@ namespace Test
         {
             dictionary = new Dictionary(file);
 
-            foreach (string key in dictionary.Headers)
+            foreach (string key in dictionary.Header.Keys)
             {
-                InfoList.Items.Add(String.Format("{0}={1}", key, dictionary.Header(key)));
+                InfoList.Items.Add(String.Format("{0}={1}", key, dictionary.Header[key]));
             }
 
             InfoList.Items.Add(dictionary.Count + " items in dictionary");

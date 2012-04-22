@@ -3,30 +3,32 @@ using System.Collections.Generic;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class Record
+    public class Record : ILine
     {
         public Chinese Chinese = null;
         public List<string> English = new List<string>();
 
-        public Record(string data)
+        public void Initialize(ref byte[] data)
         {
+            string line = System.Text.Encoding.UTF8.GetString(data, 0, data.Length);
+
             int i = 0;
-            int j = data.IndexOf(" ", i);
+            int j = line.IndexOf(" ", i);
             if (j == -1)
                 return;
-            string traditional = data.Substring(i, j - i);
+            string traditional = line.Substring(i, j - i);
 
             i = j + 1;
-            j = data.IndexOf(" [", i);
+            j = line.IndexOf(" [", i);
             if (j == -1)
                 return;
-            string simplified = data.Substring(i, j - i);
+            string simplified = line.Substring(i, j - i);
 
             i = j + 2;
-            j = data.IndexOf("] /", i);
+            j = line.IndexOf("] /", i);
             if (j == -1)
                 return;
-            string pinyin = data.Substring(i, j - i);
+            string pinyin = line.Substring(i, j - i);
 
             try
             {
@@ -38,18 +40,18 @@ namespace CC_CEDICT.WindowsPhone
             }
 
             i = j + 3;
-            j = data.IndexOf("/", i);
+            j = line.IndexOf("/", i);
             if (j == -1)
                 return;
-            English.Add(data.Substring(i, j - i));
+            English.Add(line.Substring(i, j - i));
 
-            while (data.Length > j + 1)
+            while (line.Length > j + 1)
             {
                 i = j + 1;
-                j = data.IndexOf("/", i);
+                j = line.IndexOf("/", i);
                 if (j == -1)
                     break;
-                English.Add(data.Substring(i, j - i));
+                English.Add(line.Substring(i, j - i));
             }
         }
     }

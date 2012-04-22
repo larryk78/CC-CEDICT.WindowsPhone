@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="Chinese.cs" />
     <Compile Include="Dictionary.cs" />
+    <Compile Include="ILine.cs" />
+    <Compile Include="StreamLineArray.cs" />
     <Compile Include="Indexer.cs" />
     <Compile Include="Pinyin.cs" />
     <Compile Include="PinyinIndex.cs" />
