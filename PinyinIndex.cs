@@ -7,13 +7,16 @@ using System.Text;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class PinyinIndex
+    public class PinyinIndex : StreamLineArray<IndexRecord>
     {
         Dictionary<string, List<int>> index = new Dictionary<string, List<int>>();
         string indexFilePath = "pinyin.csv";
 
         public PinyinIndex()
         {
+            using (IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication())
+                if (store.FileExists(indexFilePath))
+                    Read(new IsolatedStorageFileStream(indexFilePath, FileMode.Open, store));
         }
 
         public void Insert(string pinyin, int value)
