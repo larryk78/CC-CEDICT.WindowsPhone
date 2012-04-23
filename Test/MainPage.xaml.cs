@@ -88,7 +88,7 @@ namespace Test
         {
             start = DateTime.Now;
             PinyinIndex pi = new PinyinIndex();
-            MessageBox.Show(String.Format("Deserialization took {0} seconds.", ((TimeSpan)(DateTime.Now - start)).TotalSeconds));
+            MessageBox.Show(String.Format("wo3: {0}, {1}, {2}, ...", pi["wo3"][0], pi["wo3"][1], pi["wo3"][2]));
         }
     }
 }

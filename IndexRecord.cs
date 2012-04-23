@@ -26,7 +26,7 @@ namespace CC_CEDICT.WindowsPhone
                 if (_values.Count == 0)
                 {
                     char[] comma = { ',' };
-                    foreach (string number in data.Split(comma))
+                    foreach (string number in data.Substring(data.IndexOf(',') + 1).Split(comma))
                     {
                         int n;
                         Int32.TryParse(number, out n);
