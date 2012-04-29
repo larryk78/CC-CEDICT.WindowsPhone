@@ -7,7 +7,7 @@ namespace CC_CEDICT.WindowsPhone
     public class Indexer : BackgroundWorker
     {
         Dictionary dictionary;
-        PinyinIndex pi;
+        Index pinyinIndex, hanziIndex;
 
         public Indexer(Dictionary d)
         {
@@ -15,7 +15,8 @@ namespace CC_CEDICT.WindowsPhone
             WorkerSupportsCancellation = false;
             DoWork += new DoWorkEventHandler(Indexer_DoWork);
             dictionary = d;
-            pi = new PinyinIndex();
+            pinyinIndex = new Index("pinyin-" + d.Header["time"], d);
+            hanziIndex = new Index("hanzi-" + d.Header["time"], d);
         }
 
         public void IndexAsync()
@@ -36,13 +37,16 @@ namespace CC_CEDICT.WindowsPhone
 
                 foreach (Chinese.Character c in r.Chinese.Characters)
                 {
-                    pi.Insert(c.Pinyin.Original, index);
+                    pinyinIndex.Insert(c.Pinyin.Original, index);
+                    hanziIndex.Insert(c.Simplified.ToString(), index);
+                    hanziIndex.Insert(c.Traditional.ToString(), index);
                 }
 
                 ReportProgress((int)(100 * ++index / total));
             }
 
-            pi.Serialize();
+            pinyinIndex.Save();
+            hanziIndex.Save();
         }
     }
 }

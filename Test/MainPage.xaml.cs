@@ -29,16 +29,16 @@ namespace Test
         {
             InitializeComponent();
             IndexButton.IsEnabled = false;
+            ReadIndexButton.IsEnabled = false;
             this.Loaded += new RoutedEventHandler(MainPage_Loaded);
         }
 
         void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
-            StreamResourceInfo input = Application.GetResourceStream(new Uri("/Test;component/cedict_ts.lzma", UriKind.Relative));
-            IsolatedStorageDecoder d = new IsolatedStorageDecoder();
+            Resource2IsolatedStorageDecoder d = new Resource2IsolatedStorageDecoder();
             d.ProgressChanged += new ProgressChangedEventHandler(d_ProgressChanged);
             d.RunWorkerCompleted += new RunWorkerCompletedEventHandler(d_RunWorkerCompleted);
-            d.DecodeAsync(input.Stream, file);
+            d.DecodeAsync(file + ".lzma", file);
         }
 
         void d_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -56,8 +56,22 @@ namespace Test
                 InfoList.Items.Add(String.Format("{0}={1}", key, dictionary.Header[key]));
             }
 
-            InfoList.Items.Add(dictionary.Count + " items in dictionary");
+            foreach (string i in new List<string> { "pinyin", "hanzi", "english" })
+            {
+                string indexFileName = String.Format("{0}-{1}.csv", i, dictionary.Header["time"]);
+                string compressedName = indexFileName + ".lzma";
+                Resource2IsolatedStorageDecoder d = new Resource2IsolatedStorageDecoder();
+                d.ProgressChanged += new ProgressChangedEventHandler(d_ProgressChanged);
+                d.RunWorkerCompleted += new RunWorkerCompletedEventHandler(d_RunWorkerCompleted2);
+                d.DecodeAsync(compressedName, indexFileName);
+            }
+
             IndexButton.IsEnabled = true;
+        }
+
+        void d_RunWorkerCompleted2(object sender, RunWorkerCompletedEventArgs e)
+        {
+            ReadIndexButton.IsEnabled = true;
         }
 
         private void IndexButton_Click(object sender, RoutedEventArgs e)
@@ -86,9 +100,14 @@ namespace Test
 
         private void ReadIndexButton_Click(object sender, RoutedEventArgs e)
         {
-            start = DateTime.Now;
-            PinyinIndex pi = new PinyinIndex();
-            MessageBox.Show(String.Format("wo3: {0}, {1}, {2}, ...", pi["wo3"][0], pi["wo3"][1], pi["wo3"][2]));
+            Index pi = new Index("pinyin", dictionary);
+            Index hi = new Index("hanzi", dictionary);
+            Index ei = new Index("english", dictionary);
+            InfoList.Items.Clear();
+            foreach (int id in ei["test"])
+            {
+                InfoList.Items.Add(dictionary[id]);
+            }
         }
     }
 }

@@ -51,7 +51,8 @@
     <Reference Include="IsolatedStorageExplorer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.Phone" />
     <Reference Include="Microsoft.Phone.Interop" />
-    <Reference Include="SevenZip.Compression.LZMA.WindowsPhone">
+    <Reference Include="SevenZip.Compression.LZMA.WindowsPhone, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\SevenZip.Compression.LZMA.WindowsPhone\Bin\Release\SevenZip.Compression.LZMA.WindowsPhone.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows" />
@@ -81,7 +82,10 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="cedict_ts.lzma" />
+    <Resource Include="cedict_ts.db.lzma" />
+    <Resource Include="english-1334393999.csv.lzma" />
+    <Resource Include="hanzi-1334393999.csv.lzma" />
+    <Resource Include="pinyin-1334393999.csv.lzma" />
     <None Include="Properties\AppManifest.xml" />
     <None Include="Properties\WMAppManifest.xml" />
   </ItemGroup>

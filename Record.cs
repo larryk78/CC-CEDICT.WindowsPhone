@@ -54,5 +54,14 @@ namespace CC_CEDICT.WindowsPhone
                 English.Add(line.Substring(i, j - i));
             }
         }
+
+        public override string ToString()
+        {
+            return String.Format("{0} {1} [{2}] /{3}/",
+                Chinese.Traditional,
+                Chinese.Simplified,
+                Chinese.Pinyin,
+                String.Join("/", English));
+        }
     }
 }

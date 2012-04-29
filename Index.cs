@@ -3,41 +3,41 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.IsolatedStorage;
-using System.Runtime.Serialization;
 using System.Text;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class PinyinIndex : StreamLineArray<IndexRecord>
+    public class Index : StreamLineArray<IndexRecord>
     {
-        Dictionary<string, List<int>> index = new Dictionary<string, List<int>>();
-        string indexFilePath = "pinyin.csv";
+        string indexFilePath;
+        bool loaded = false;
 
-        public PinyinIndex()
+        public Index(string name, Dictionary dict)
         {
+            indexFilePath = String.Format("{0}-{1}.csv", name, dict.Header["time"]);
             using (IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication())
+            {
                 if (store.FileExists(indexFilePath))
+                {
+                    Debug.WriteLine(String.Format("Loading index file: {0}", indexFilePath));
                     Read(new IsolatedStorageFileStream(indexFilePath, FileMode.Open, store));
+                    loaded = true;
+                }
+            }
         }
 
-        public void Insert(string key, int value)
-        {
-            key = key.ToLower();
-            if (!this.index.ContainsKey(key))
-                this.index[key] = new List<int> { value };
-            else if (!this.index[key].Contains(value))
-                this.index[key].Add(value);
-        }
-
-        Dictionary<string, int> _lookup = new Dictionary<string, int>();
+        Dictionary<string, int> lookup = new Dictionary<string, int>();
+        
         public List<int> this[string key]
         {
             get
             {
+                if (!loaded)
+                    return null;
                 key = key.ToLower();
-                if (!_lookup.ContainsKey(key))
-                    _lookup[key] = BinarySearch(key);
-                return _lookup[key] < 0 ? null : this[_lookup[key]].Values;
+                if (!lookup.ContainsKey(key))
+                    lookup[key] = BinarySearch(key);
+                return lookup[key] < 0 ? null : this[lookup[key]].Values;
             }
         }
 
@@ -62,7 +62,20 @@ namespace CC_CEDICT.WindowsPhone
             return -1;
         }
 
-        public void Serialize()
+        #region Index creation
+
+        Dictionary<string, List<int>> index = new Dictionary<string, List<int>>();
+        
+        public void Insert(string key, int value)
+        {
+            key = key.ToLower();
+            if (!this.index.ContainsKey(key))
+                this.index[key] = new List<int> { value };
+            else if (!this.index[key].Contains(value))
+                this.index[key].Add(value);
+        }
+
+        public void Save()
         {
             using (IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication())
             {
@@ -74,13 +87,15 @@ namespace CC_CEDICT.WindowsPhone
                     string record = key;
                     foreach (int value in index[key])
                         record += "," + value.ToString();
-                    Debug.WriteLine(record);
                     record += "\n";
                     byte[] data = Encoding.UTF8.GetBytes(record);
                     file.Write(data, 0, data.Length);
                 }
                 file.Close();
+                Debug.WriteLine(String.Format("Created index file: {0}", indexFilePath));
             }
         }
+        
+        #endregion
     }
 }

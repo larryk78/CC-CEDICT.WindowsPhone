@@ -69,7 +69,7 @@ namespace CC_CEDICT.WindowsPhone
             {
                 if (_markedup == null)
                 {
-                    if (Tone == Tones.Unknown)
+                    if (Tone == Tones.Unknown || Tone == Tones.Neutral)
                     {
                         _markedup = Syllable;
                     }
