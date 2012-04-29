@@ -31,27 +31,31 @@ namespace CC_CEDICT.WindowsPhone
                 }
                 return _pinyin;
             }
+            set
+            {
+                _pinyin = value;
+                pinyinMarkupDone = false;
+            }
         }
 
         public Chinese(string traditional, string simplified, string pinyin)
         {
+            // store the original values (contains punctuation)
             Traditional = traditional;
             Simplified = simplified;
-            _pinyin = pinyin;
-            ProcessChinese();
-        }
+            Pinyin = pinyin;
 
-        void ProcessChinese()
-        {
+            // split to individual characters
+            List<char> t = Split(traditional);
+            List<char> s = Split(simplified);
+
             char[] pDelim = { ' ', ',', '·' }; // ignore: space, comma, middle-dot
-
-            List<char> t = Split(Traditional);
-            List<char> s = Split(Simplified);
-            List<string> p = new List<string>(_pinyin.Split(pDelim, StringSplitOptions.RemoveEmptyEntries));
+            List<string> p = new List<string>(pinyin.Split(pDelim, StringSplitOptions.RemoveEmptyEntries));
 
             if (t.Count != s.Count || s.Count != p.Count)
                 throw new FormatException(String.Format("Non-matching Hanzi-Pinyin: T[{0}], S[{1}], P[{2}]", t, s, p));
 
+            // populate Characters list
             for (int i = 0; i < t.Count; i++)
                 Characters.Add(new Character { Traditional = t[i], Simplified = s[i], Pinyin = new Pinyin(p[i]) });
         }

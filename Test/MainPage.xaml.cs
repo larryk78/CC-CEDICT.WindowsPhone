@@ -104,9 +104,15 @@ namespace Test
             Index hi = new Index("hanzi", dictionary);
             Index ei = new Index("english", dictionary);
             InfoList.Items.Clear();
+            List<Record> results = new List<Record>();
             foreach (int id in ei["test"])
             {
-                InfoList.Items.Add(dictionary[id]);
+                results.Add(dictionary[id]);
+            }
+            //TODO: sort results
+            foreach (Record r in results)
+            {
+                InfoList.Items.Add(r);
             }
         }
     }
