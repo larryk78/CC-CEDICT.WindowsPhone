@@ -6,7 +6,7 @@ using System.IO.IsolatedStorage;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class Dictionary : StreamLineArray<Record>
+    public class Dictionary : StreamLineArray<DictionaryRecord>
     {
         public Dictionary<string, string> Header = new Dictionary<string, string>();
         

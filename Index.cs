@@ -9,24 +9,21 @@ namespace CC_CEDICT.WindowsPhone
 {
     public class Index : StreamLineArray<IndexRecord>
     {
-        string indexFilePath;
         bool loaded = false;
+        Dictionary<string, int> lookup = new Dictionary<string, int>();
 
-        public Index(string name, Dictionary dict)
+        public Index(string path)
         {
-            indexFilePath = String.Format("{0}-{1}.csv", name, dict.Header["time"]);
             using (IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication())
             {
-                if (store.FileExists(indexFilePath))
+                if (store.FileExists(path))
                 {
-                    Debug.WriteLine(String.Format("Loading index file: {0}", indexFilePath));
-                    Read(new IsolatedStorageFileStream(indexFilePath, FileMode.Open, store));
+                    Debug.WriteLine(String.Format("Loading index file: {0}", path));
+                    Read(new IsolatedStorageFileStream(path, FileMode.Open, store));
                     loaded = true;
                 }
             }
         }
-
-        Dictionary<string, int> lookup = new Dictionary<string, int>();
         
         public List<int> this[string key]
         {
@@ -61,41 +58,5 @@ namespace CC_CEDICT.WindowsPhone
             }
             return -1;
         }
-
-        #region Index creation
-
-        Dictionary<string, List<int>> index = new Dictionary<string, List<int>>();
-        
-        public void Insert(string key, int value)
-        {
-            key = key.ToLower();
-            if (!this.index.ContainsKey(key))
-                this.index[key] = new List<int> { value };
-            else if (!this.index[key].Contains(value))
-                this.index[key].Add(value);
-        }
-
-        public void Save()
-        {
-            using (IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication())
-            {
-                IsolatedStorageFileStream file = new IsolatedStorageFileStream(indexFilePath, FileMode.Create, store);
-                List<string> keys = new List<string>(index.Keys);
-                keys.Sort();
-                foreach (string key in keys)
-                {
-                    string record = key;
-                    foreach (int value in index[key])
-                        record += "," + value.ToString();
-                    record += "\n";
-                    byte[] data = Encoding.UTF8.GetBytes(record);
-                    file.Write(data, 0, data.Length);
-                }
-                file.Close();
-                Debug.WriteLine(String.Format("Created index file: {0}", indexFilePath));
-            }
-        }
-        
-        #endregion
     }
 }

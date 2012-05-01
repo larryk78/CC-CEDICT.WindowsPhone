@@ -5,8 +5,9 @@ using System.Text;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public interface ILine
+    public abstract class ILine
     {
-        void Initialize(ref byte[] data);
+        public int LineNumber;
+        public abstract void Initialize(ref byte[] data);
     }
 }

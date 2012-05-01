@@ -37,7 +37,7 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        public void Initialize(ref byte[] data)
+        public override void Initialize(ref byte[] data)
         {
             this.data = System.Text.Encoding.UTF8.GetString(data, 0, data.Length);
         }

@@ -10,7 +10,7 @@
     FontFamily="{StaticResource PhoneFontFamilyNormal}"
     FontSize="{StaticResource PhoneFontSizeNormal}"
     Foreground="{StaticResource PhoneForegroundBrush}"
-    SupportedOrientations="Portrait" Orientation="Portrait"
+    SupportedOrientations="PortraitOrLandscape" Orientation="Portrait"
     shell:SystemTray.IsVisible="True">
 
     <!--LayoutRoot is the root grid where all page content is placed-->
@@ -30,7 +30,7 @@
         <StackPanel x:Name="ContentPanel" Grid.Row="1" Margin="12,0,12,0">
             <TextBlock Height="20" x:Name="ProgressText" Margin="20,0,20,0" FontSize="18"/>
             <ProgressBar x:Name="Progress" Margin="8,0,8,0" Height="10" />
-            <ListBox x:Name="InfoList" FontSize="28" Margin="20"/>
+            <ListBox x:Name="InfoList" FontSize="28" Margin="20" Height="400"/>
             <Button x:Name="IndexButton" Content="Index" Click="IndexButton_Click"/>
             <Button x:Name="ReadIndexButton" Content="Read Index" Click="ReadIndexButton_Click"/>
         </StackPanel>
