@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 
 <Deployment xmlns="http://schemas.microsoft.com/windowsphone/2009/deployment" AppPlatformVersion="7.1">
-  <App xmlns="" ProductID="{e68fa334-5cf5-4e45-ae38-d6c59de27ee9}" Title="Test" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal"  Author="Test author" Description="Sample description" Publisher="Test">
+  <App xmlns="" ProductID="{0201d493-1504-4aa3-8c27-055f7fd3acc8}" Title="Test2" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal"  Author="Test2 author" Description="Sample description" Publisher="Test2">
     <IconPath IsRelative="true" IsResource="false">ApplicationIcon.png</IconPath>
     <Capabilities>
       <Capability Name="ID_CAP_GAMERSERVICES"/>
@@ -23,11 +23,11 @@
       <DefaultTask  Name ="_default" NavigationPage="MainPage.xaml"/>
     </Tasks>
     <Tokens>
-      <PrimaryToken TokenID="TestToken" TaskName="_default">
+      <PrimaryToken TokenID="Test2Token" TaskName="_default">
         <TemplateType5>
           <BackgroundImageURI IsRelative="true" IsResource="false">Background.png</BackgroundImageURI>
           <Count>0</Count>
-          <Title>Test</Title>
+          <Title>Test2</Title>
         </TemplateType5>
       </PrimaryToken>
     </Tokens>

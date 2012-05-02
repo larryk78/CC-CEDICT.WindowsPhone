@@ -6,11 +6,11 @@ using System.Resources;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Test")]
+[assembly: AssemblyTitle("Test2")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("NOKIA")]
-[assembly: AssemblyProduct("Test")]
+[assembly: AssemblyProduct("Test2")]
 [assembly: AssemblyCopyright("Copyright © NOKIA 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -21,7 +21,7 @@ using System.Resources;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("caf7a8ac-6849-4c56-8cbf-a90e0435eddc")]
+[assembly: Guid("ffe75506-517c-464e-8b50-5a9020f9d31d")]
 
 // Version information for an assembly consists of the following four values:
 //

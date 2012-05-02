@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -15,108 +16,258 @@ namespace CC_CEDICT.WindowsPhone
 {
     public class Searcher
     {
-        public enum Type { Unknown, English, Pinyin, Hanzi };
+        public enum Type { Unknown = 0, English = 1, Pinyin = 2, Hanzi = 4, Ambiguous = English|Pinyin };
         Dictionary dictionary;
         Dictionary<Type, Index> index = new Dictionary<Type, Index>();
         Dictionary<string, bool> pinyin = new Dictionary<string, bool>();
+        Regex compoundPinyin;
 
         public Searcher(Dictionary d, Index english, Index pinyin, Index hanzi)
         {
+            DateTime start = DateTime.Now;
+
             dictionary = d;
             index[Type.English] = english;
             index[Type.Pinyin] = pinyin;
             index[Type.Hanzi] = hanzi;
+
+            // pre-cache all pinyin syllables for lookup
             foreach (IndexRecord r in index[Type.Pinyin])
-                this.pinyin[r.Key] = true; // pre-cache all pinyin syllables
+            {
+                Pinyin p = new Pinyin(r.Key);
+                if (p.Syllable.Length > 1) // skip individual characters TEST TEST TEST
+                    this.pinyin[p.Syllable] = true;
+            }
+            
+            // create regex for matching compound Pinyin terms, e.g. nihao, pengyou, etc.
+            // TODO: sort Keys in descending order of length first
+            compoundPinyin = new Regex("^(" + String.Join("[1-5]?|", this.pinyin.Keys) + "[1-5]?)+$");
+
+            Debug.WriteLine(String.Format("Searcher initialisation took {0}ms", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
         }
 
-        class SearchTerm
+        public bool SmartSearch;
+        List<SearchTerm> _used = new List<SearchTerm>();
+        public string LastQuery
         {
-            public Type type = Type.Unknown;
-            public string text;
-            public Pinyin pinyin;
-        }
-
-        void Intersect(ref List<int> target, List<int> items)
-        {
-            for (int i = target.Count - 1; i > 0; i--)
-                if (!items.Contains(target[i]))
-                    target.RemoveAt(i);
+            get
+            {
+                string query = "";
+                foreach (SearchTerm term in _used)
+                {
+                    if (query.Length > 0)
+                        query += " ";
+                    query += term.Type == Type.Pinyin ? term.Pinyin.Original : term.Term;
+                }
+                return query;
+            }
         }
 
         public List<DictionaryRecord> Search(string query)
         {
+            DateTime start = DateTime.Now;
+            Debug.WriteLine(String.Format("Searching for: '{0}'", query));
+
             List<DictionaryRecord> results = new List<DictionaryRecord>();
+            SmartSearch = false;
             foreach (int i in AbstractSearch(query))
                 results.Add(dictionary[i]);
-            return results;
-        }
 
-        struct ResultNode
-        {
-            public string Term = null;
-            public Type Type = Type.Unknown;
-            public List<int> Results = new List<int>();
+            Debug.WriteLine(String.Format("Actual query: '{0}' took {1}ms. and produced {2} results",
+                LastQuery,
+                ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds,
+                results.Count));
+
+            return results;
         }
 
         List<int> AbstractSearch(string query)
         {
-            //TODO: fix this so just one set of results (combination) of all results for each term
-            List<List<ResultNode>> results = new List<List<ResultNode>>();
+            List<int> results = new List<int>();
             query = query.Trim();
             if (query.Length == 0)
-                return null;
+                return results; // empty
+
+            List<SearchTerm> terms = Tokenize(query);
+            _used.Clear();
+            foreach (SearchTerm term in terms)
+            {
+                if (term.Type == Type.Unknown || term.Results == null || term.Results.Count == 0)
+                    continue;
+
+                if (results.Count == 0) // first time through the loop
+                {
+                    results.AddRange(term.Results);
+                }
+                else
+                {
+                    List<int> temp = results;
+                    this.Intersect(ref temp, term.Results);
+                    if (temp.Count == 0) // this search term obliterates all results - ignore
+                        continue;
+                    results = temp;
+                }
+                _used.Add(term);
+            }
+
+            if (_used.Count != terms.Count) // not all terms were used (duh!)
+                SmartSearch = true;
+
+            return results;
+        }
+
+        struct SearchTerm
+        {
+            public string Term;
+            public Pinyin Pinyin;
+            public Type Type;
+            public List<int> Results;
+        }
+
+        List<SearchTerm> Tokenize(string query)
+        {
+            List<SearchTerm> terms = new List<SearchTerm>();
 
             // break query into individual terms
             char[] delim = { ' ' };
-            int i = 0;
-            foreach (string term in query.ToLower().Split(delim, StringSplitOptions.RemoveEmptyEntries))
+            foreach (string token in query.ToLower().Split(delim, StringSplitOptions.RemoveEmptyEntries))
             {
-                List<int> items;
-                bool matchedEnglish = false;
-                if ((items = index[Type.English][term]) != null) // English
+                SearchTerm term = new SearchTerm { Term = token, Type = Type.Unknown };
+                List<int> items = new List<int>();
+                
+                if (ContainsHanzi(token))
                 {
-                    matchedEnglish = true;
-                    results[i].Add(new ResultNode { Term = term, Type = Type.English, Results = items });
-                }
-
-                bool matchedPinyin = false;
-                if ((items = index[Type.Pinyin][term]) != null) // Pinyin
-                {
-                    matchedPinyin = true;
-                    results[i].Add(new ResultNode { Term = term, Type = Type.Pinyin, Results = items });
-                }
-
-                bool matchedHanzi = false;
-                if ((items = index[Type.Hanzi][term]) != null) // Hanzi
-                {
-                    matchedHanzi = true;
-                    results[i].Add(new ResultNode { Term = term, Type = Type.Hanzi, Results = items });
-                }
-
-                if (!matchedEnglish && !matchedPinyin && !matchedHanzi) // might be a compound
-                {
-                    MatchCollection matches = hanziRegex.Matches(term);
-                    if (matches.Count > 0)
+                    if (OnlyHanzi(token)) // full Hanzi token
                     {
-                        foreach (Match match in matches)
+                        if ((items = index[Type.Hanzi][token]) != null) // found an exact match
                         {
-                            string hanzi = match.Groups[1].Value;
-                            if (isHanzi(hanzi))
-                                terms.Add(new SearchTerm { text = hanzi, type = SearchTerm.Types.Hanzi });
+                            term.Type = Type.Hanzi;
+                            term.Term = token;
+                            term.Results = items;
+                            terms.Add(term);
                         }
+                        else if (token.Length > 1) // not found, so split and search
+                        {
+                            // TODO: this is where the intelligent Chinese wordsearch combinatorics come in :)
+                            terms.AddRange(Tokenize(String.Join(" ", token.ToCharArray())));
+                        }
+                    }
+                    else // some mixture of Hanzi and something else
+                    {
+                        terms.AddRange(Tokenize(String.Join(" ", SegregateHanziNonHanzi(token))));
+                    }
+                    continue; // completely handled this token
+                }
+
+                if (pinyin.ContainsKey(token)) // Pinyin with no tone
+                {
+                    List<int> temp;
+                    if ((temp = index[Type.Pinyin][token]) != null) // try with no tone
+                        items.AddRange(temp);
+
+                    for (int i=1; i<=5; i++) // then go through all the tones
+                        if ((temp = index[Type.Pinyin][token + i.ToString()]) != null)
+                            items.AddRange(temp);
+                    
+                    term.Type = Type.Pinyin;
+                    term.Pinyin = new Pinyin(token);
+                    term.Results = items;
+                }
+                else if ((items = index[Type.Pinyin][token]) != null) // Pinyin (with tone)
+                {
+                    term.Type = Type.Pinyin;
+                    term.Pinyin = new Pinyin(token);
+                    term.Results = items;
+                }
+                else // could be a compound Pinyin term?
+                {
+                    Match match = compoundPinyin.Match(token);
+                    if (match.Groups.Count > 0) // yes, it was :)
+                    {
+                        foreach (Capture capture in match.Groups[1].Captures)
+                            terms.AddRange(Tokenize(capture.Value));
                         continue;
                     }
                 }
-                
-                i++;
+
+                if ((items = index[Type.English][token]) != null) // English
+                {
+                    if (term.Type == Type.Pinyin) // already matched Pinyin
+                    {
+                        term.Type = Type.Ambiguous;
+                        term.Results.AddRange(items);
+                    }
+                    else // plain English
+                    {
+                        term.Type = Type.English;
+                        term.Results = items;
+                    }
+                }
+
+                terms.Add(term);
+
+                Debug.WriteLine(String.Format("Query term: '{0}' is {1} with {2} associated results.",
+                    term.Term,
+                    term.Type,
+                    term.Results == null ? 0 : term.Results.Count));
             }
 
-            return null;
+            return terms;
         }
 
-        static Regex pinyinRegex = new Regex("^[a-z]+\\d");
-        static Regex hanziRegex = new Regex("([\\u2600-\\uffff])");
+        static Regex containsHanziRegex = new Regex("([\\u2600-\\uffff])");
+        bool ContainsHanzi(string term) // strictly speaking, implements ContainsHighValueUnicode
+        {
+            Match match = containsHanziRegex.Match(term);
+            return match.Success;
+        }
 
+        static Regex onlyHanziRegex = new Regex("^([\\u2600-\\uffff])+$");
+        bool OnlyHanzi(string term) // ditto
+        {
+            Match match = onlyHanziRegex.Match(term);
+            return match.Success;
+        }
+
+        List<string> SegregateHanziNonHanzi(string term)
+        {
+            List<string> chunks = new List<string>();
+            string hanziChunk = "";
+            string otherChunk = "";
+            bool lastWasHanzi = false;
+            foreach (char c in term.ToCharArray())
+            {
+                if (OnlyHanzi(c.ToString()))
+                {
+                    if (!lastWasHanzi && otherChunk.Length > 0)
+                    {
+                        chunks.Add(otherChunk);
+                        otherChunk = "";
+                    }
+                    hanziChunk += c;
+                    lastWasHanzi = true;
+                }
+                else
+                {
+                    if (lastWasHanzi && hanziChunk.Length > 0)
+                    {
+                        chunks.Add(hanziChunk);
+                        hanziChunk = "";
+                    }
+                    otherChunk += c;
+                    lastWasHanzi = false;
+                }
+            }
+            return chunks;
+        }
+
+        void Intersect(ref List<int> target, List<int> items)
+        {
+            if (items == null)
+                return;
+            for (int i = target.Count - 1; i > 0; i--)
+                if (!items.Contains(target[i]))
+                    target.RemoveAt(i);
+        }
     }
 }
