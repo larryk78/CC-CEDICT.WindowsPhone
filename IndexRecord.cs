@@ -18,19 +18,22 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        List<int> _values = new List<int>();
-        public List<int> Values
+        Dictionary<int, int> _values = new Dictionary<int, int>();
+        public Dictionary<int, int> Values
         {
             get
             {
                 if (_values.Count == 0)
                 {
                     char[] comma = { ',' };
-                    foreach (string number in data.Substring(data.IndexOf(',') + 1).Split(comma))
+                    char[] pipe = { '|' };
+                    foreach (string tuple in data.Substring(data.IndexOf(',') + 1).Split(comma))
                     {
-                        int n;
-                        Int32.TryParse(number, out n);
-                        _values.Add(n);
+                        string[] fields = tuple.Split(pipe);
+                        int index, relevance;
+                        Int32.TryParse(fields[0], out index);
+                        Int32.TryParse(fields[1], out relevance);
+                        _values.Add(index, relevance);
                     }
                 }
                 return _values;

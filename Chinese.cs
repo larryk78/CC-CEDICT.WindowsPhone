@@ -43,7 +43,7 @@ namespace CC_CEDICT.WindowsPhone
             // store the original values (contains punctuation)
             Traditional = traditional;
             Simplified = simplified;
-            Pinyin = pinyin;
+            Pinyin = pinyin.Replace("u:", "v");
 
             // split to individual characters
             List<char> t = Split(traditional);

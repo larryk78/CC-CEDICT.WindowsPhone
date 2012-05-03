@@ -79,6 +79,7 @@ namespace Test2
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+        public int Index;
         private void NotifyPropertyChanged(String propertyName)
         {
             PropertyChangedEventHandler handler = PropertyChanged;

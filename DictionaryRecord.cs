@@ -69,45 +69,5 @@ namespace CC_CEDICT.WindowsPhone
             DictionaryRecord r = (DictionaryRecord)obj;
             return this.Chinese.Pinyin.CompareTo(r.Chinese.Pinyin);
         }
-
-        public class Comparer : IComparer<DictionaryRecord>
-        {
-            List<string> context;
-            Dictionary<int, int> cache = new Dictionary<int,int>();
-
-            public Comparer(List<string> context)
-            {
-                this.context = context;
-            }
-
-            int IComparer<DictionaryRecord>.Compare(DictionaryRecord a, DictionaryRecord b)
-            {
-                int aRelevance = Relevance(a);
-                int bRelevance = Relevance(b);
-
-                if (aRelevance > bRelevance)
-                    return -1;
-                else if (aRelevance < bRelevance)
-                    return 1;
-                else
-                    return ((IComparable)a).CompareTo(b);
-            }
-
-            int Relevance(DictionaryRecord r)
-            {
-                if (!cache.ContainsKey(r.LineNumber))
-                {
-                    int relevance = 0;
-                    foreach (string s in context)
-                    {
-                        string word = s.ToLower();
-                        string text = r.ToString().ToLower();
-                        relevance += 100 - (100 * text.IndexOf(word) / text.Length);
-                    }
-                    cache[r.LineNumber] = relevance;
-                }
-                return cache[r.LineNumber];
-            }
-        }
     }
 }

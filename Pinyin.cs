@@ -13,7 +13,7 @@ namespace CC_CEDICT.WindowsPhone
 
         public Pinyin(string input)
         {
-            Original = input.Replace("u:", "v").Replace("U:", "V");
+            Original = input.Replace("u:", "v");
 
             Regex pattern = new Regex("^([a-zA-Z]+)([1-5])$");
             Match match = pattern.Match(Original);
@@ -56,7 +56,7 @@ namespace CC_CEDICT.WindowsPhone
         static string initial = "(?:[bcdfghjklmnpqrstwxyz]|[csz]h)";
         static string vowel = "[aeiouv]";
         static string priorityVowel = "[aeo]";
-        static string secondaryVowel = "[iu]";
+        static string secondaryVowel = "[iuv]";
 
         static Regex singleVowel = new Regex("^(" + initial + ")?(" + vowel + ")(?!" + vowel + ")", RegexOptions.IgnoreCase);
         static Regex multiVowelPriority = new Regex("^(" + initial + ")?(" + priorityVowel + ")(?=" + vowel + ")", RegexOptions.IgnoreCase);

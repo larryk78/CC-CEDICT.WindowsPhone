@@ -74,7 +74,7 @@ namespace CC_CEDICT.WindowsPhone
                 stream.Read(data, 0, data.Length);
 
                 T line = new T();
-                line.LineNumber = index;
+                line.Index = index;
                 line.Initialize(ref data);
                 return line;
             }

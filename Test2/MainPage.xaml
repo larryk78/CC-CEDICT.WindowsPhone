@@ -28,7 +28,7 @@
             <TextBlock x:Name="Status" Text="foo" Style="{StaticResource PhoneTextSmallStyle}"/>
             <ProgressBar x:Name="Progress"/>
             <TextBox x:Name="Query"/>
-            <Button Content="Search" Click="Button_Click"/>
+            <Button x:Name="SearchButton" Content="Search" Click="Button_Click"/>
         </StackPanel>
 
         <!--ContentPanel contains ListBox and ListBox ItemTemplate. Place additional content here-->
@@ -36,9 +36,9 @@
             <ListBox x:Name="MainListBox" Margin="0,0,-12,0" ItemsSource="{Binding Items}" SelectionChanged="MainListBox_SelectionChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                      <StackPanel Margin="0,0,0,17" Width="432" Height="78">
-                          <TextBlock Text="{Binding LineOne}" TextWrapping="Wrap" Style="{StaticResource PhoneTextExtraLargeStyle}"/>
-                          <TextBlock Text="{Binding LineTwo}" TextWrapping="Wrap" Margin="12,-6,12,0" Style="{StaticResource PhoneTextSubtleStyle}"/>
+                      <StackPanel Margin="0,0,0,10" Width="432" Height="78">
+                          <TextBlock Text="{Binding LineOne}" TextWrapping="NoWrap" Style="{StaticResource PhoneTextLargeStyle}"/>
+                          <TextBlock Text="{Binding LineTwo}" TextWrapping="NoWrap" Margin="12,-6,12,0" Style="{StaticResource PhoneTextSubtleStyle}"/>
                       </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Collections.ObjectModel;
 
+using CC_CEDICT.WindowsPhone;
 
 namespace Test2
 {
@@ -79,6 +80,18 @@ namespace Test2
             this.Items.Add(new ItemViewModel() { LineOne = "runtime sixteen", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum" });
 
             this.IsDataLoaded = true;
+        }
+
+        public void LoadData(List<DictionaryRecord> items)
+        {
+            this.Items.Clear();
+            foreach (DictionaryRecord r in items)
+                this.Items.Add(new ItemViewModel()
+                {
+                    LineOne = String.Format("{0} {1}", r.Chinese.Simplified, r.Chinese.Pinyin),
+                    LineTwo = String.Join("; ", r.English),
+                    Index = r.Index
+                });
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

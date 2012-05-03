@@ -7,7 +7,7 @@ namespace CC_CEDICT.WindowsPhone
 {
     public abstract class ILine
     {
-        public int LineNumber;
+        public int Index;
         public abstract void Initialize(ref byte[] data);
     }
 }

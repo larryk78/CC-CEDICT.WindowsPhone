@@ -25,7 +25,7 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
         
-        public List<int> this[string key]
+        public Dictionary<int, int> this[string key]
         {
             get
             {

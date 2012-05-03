@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
@@ -32,16 +33,18 @@ namespace CC_CEDICT.WindowsPhone
             index[Type.Hanzi] = hanzi;
 
             // pre-cache all pinyin syllables for lookup
+            List<string> syllables = new List<string>();
             foreach (IndexRecord r in index[Type.Pinyin])
             {
                 Pinyin p = new Pinyin(r.Key);
-                if (p.Syllable.Length > 1) // skip individual characters TEST TEST TEST
-                    this.pinyin[p.Syllable] = true;
+                this.pinyin[p.Syllable] = true;
+                if (p.Syllable.Length > 1 || p.Syllable == "a" || p.Syllable == "e") // skip random individual characters
+                    syllables.Add(p.Syllable);
             }
             
             // create regex for matching compound Pinyin terms, e.g. nihao, pengyou, etc.
-            // TODO: sort Keys in descending order of length first
-            compoundPinyin = new Regex("^(" + String.Join("[1-5]?|", this.pinyin.Keys) + "[1-5]?)+$");
+            syllables.Sort((a, b) => b.Length.CompareTo(a.Length));
+            compoundPinyin = new Regex("^(" + String.Join("[1-5]?|", syllables) + "[1-5]?)+$");
 
             Debug.WriteLine(String.Format("Searcher initialisation took {0}ms", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
         }
@@ -63,14 +66,14 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        public List<DictionaryRecord> Search(string query)
+        public List<DictionaryRecord> Search(string query, int minRelevance=0)
         {
             DateTime start = DateTime.Now;
             Debug.WriteLine(String.Format("Searching for: '{0}'", query));
 
             List<DictionaryRecord> results = new List<DictionaryRecord>();
             SmartSearch = false;
-            foreach (int i in AbstractSearch(query))
+            foreach (int i in AbstractSearch(query, minRelevance))
                 results.Add(dictionary[i]);
 
             Debug.WriteLine(String.Format("Actual query: '{0}' took {1}ms. and produced {2} results",
@@ -81,8 +84,9 @@ namespace CC_CEDICT.WindowsPhone
             return results;
         }
 
-        List<int> AbstractSearch(string query)
+        List<int> AbstractSearch(string query, int minRelevance) // TODO: exact matches, in-order matches (esp. compound Pinyin)
         {
+            DateTime start = DateTime.Now;
             List<int> results = new List<int>();
             query = query.Trim();
             if (query.Length == 0)
@@ -101,11 +105,11 @@ namespace CC_CEDICT.WindowsPhone
                 }
                 else
                 {
-                    List<int> temp = results;
+                    List<int> temp = new List<int>(results);
                     this.Intersect(ref temp, term.Results);
-                    if (temp.Count == 0) // this search term obliterates all results - ignore
-                        continue;
-                    results = temp;
+                    if (temp.Count == 0) // this search term obliterates all results
+                        continue; // ignore
+                    results = new List<int>(temp);
                 }
                 _used.Add(term);
             }
@@ -113,6 +117,7 @@ namespace CC_CEDICT.WindowsPhone
             if (_used.Count != terms.Count) // not all terms were used (duh!)
                 SmartSearch = true;
 
+            Debug.WriteLine(String.Format("AbstractSearch took {0}ms", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
             return results;
         }
 
@@ -121,10 +126,10 @@ namespace CC_CEDICT.WindowsPhone
             public string Term;
             public Pinyin Pinyin;
             public Type Type;
-            public List<int> Results;
+            public Dictionary<int, int> Results;
         }
 
-        List<SearchTerm> Tokenize(string query)
+        List<SearchTerm> Tokenize(string query, bool ignoreEnglish=false)
         {
             List<SearchTerm> terms = new List<SearchTerm>();
 
@@ -133,8 +138,8 @@ namespace CC_CEDICT.WindowsPhone
             foreach (string token in query.ToLower().Split(delim, StringSplitOptions.RemoveEmptyEntries))
             {
                 SearchTerm term = new SearchTerm { Term = token, Type = Type.Unknown };
-                List<int> items = new List<int>();
-                
+                Dictionary<int, int> items = new Dictionary<int, int>();
+
                 if (ContainsHanzi(token))
                 {
                     if (OnlyHanzi(token)) // full Hanzi token
@@ -182,15 +187,15 @@ namespace CC_CEDICT.WindowsPhone
                 else // could be a compound Pinyin term?
                 {
                     Match match = compoundPinyin.Match(token);
-                    if (match.Groups.Count > 0) // yes, it was :)
+                    if (match.Groups.Count > 1) // yes, it was :)
                     {
                         foreach (Capture capture in match.Groups[1].Captures)
-                            terms.AddRange(Tokenize(capture.Value));
+                            terms.AddRange(Tokenize(capture.Value, true));
                         continue;
                     }
                 }
 
-                if ((items = index[Type.English][token]) != null) // English
+                if (!ignoreEnglish && (items = index[Type.English][token]) != null) // English
                 {
                     if (term.Type == Type.Pinyin) // already matched Pinyin
                     {
@@ -265,7 +270,7 @@ namespace CC_CEDICT.WindowsPhone
         {
             if (items == null)
                 return;
-            for (int i = target.Count - 1; i > 0; i--)
+            for (int i = target.Count - 1; i >= 0; i--)
                 if (!items.Contains(target[i]))
                     target.RemoveAt(i);
         }

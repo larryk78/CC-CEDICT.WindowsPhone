@@ -22,6 +22,7 @@ namespace Test2
         public MainPage()
         {
             InitializeComponent();
+            SearchButton.IsEnabled = false;
 
             // Set the data context of the listbox control to the sample data
             DataContext = App.ViewModel;
@@ -31,7 +32,8 @@ namespace Test2
         // Handle selection changed on ListBox
         private void MainListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            return;
+            if (MainListBox.SelectedIndex == -1) return;
+            MessageBox.Show(d[((ItemViewModel)(e.AddedItems[0])).Index].ToString());
         }
 
         private void MainPage_Loaded(object sender, RoutedEventArgs e)
@@ -52,18 +54,23 @@ namespace Test2
         }
 
         int x = 0;
+        Dictionary d;
         Searcher s;
         void decoder_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
             if (++x < 4) return;
-            s = new Searcher(new Dictionary("cedict_ts.u8"), new Index("english.csv"), new Index("pinyin.csv"), new Index("hanzi.csv"));
+            SearchButton.IsEnabled = true;
+            d = new Dictionary("cedict_ts.u8");
+            s = new Searcher(d, new Index("english.csv"), new Index("pinyin.csv"), new Index("hanzi.csv"));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            s.Search(Query.Text);
-            Status.Text = s.LastQuery;
-            //App.ViewModel.LoadData();
+            DateTime start = DateTime.Now;
+            List<DictionaryRecord> results = s.Search(Query.Text);
+            TimeSpan elapsed = DateTime.Now - start;
+            Status.Text = String.Format("Search: '{0}' took {1:f2}s. ({2} results)", s.LastQuery, elapsed.TotalSeconds, results.Count);
+            App.ViewModel.LoadData(results);
         }
     }
 }
