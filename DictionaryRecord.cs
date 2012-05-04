@@ -7,6 +7,9 @@ namespace CC_CEDICT.WindowsPhone
     {
         public Chinese Chinese = null;
         public List<string> English = new List<string>();
+        public int Relevance = 100;
+
+        #region ILine initialization
 
         public override void Initialize(ref byte[] data)
         {
@@ -55,6 +58,8 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
+        #endregion
+
         public override string ToString()
         {
             return String.Format("{0} {1} [{2}] /{3}/",
@@ -66,8 +71,13 @@ namespace CC_CEDICT.WindowsPhone
 
         int IComparable.CompareTo(object obj)
         {
-            DictionaryRecord r = (DictionaryRecord)obj;
-            return this.Chinese.Pinyin.CompareTo(r.Chinese.Pinyin);
+            DictionaryRecord other = (DictionaryRecord)obj;
+            if (this.Relevance > other.Relevance)
+                return -1;
+            else if (this.Relevance == other.Relevance)
+                return this.Chinese.Pinyin.CompareTo(other.Chinese.Pinyin);
+            else
+                return 1;
         }
     }
 }
