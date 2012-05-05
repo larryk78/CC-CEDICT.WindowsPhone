@@ -25,7 +25,7 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
         
-        public Dictionary<int, int> this[string key]
+        public List<IndexRecord.Reference> this[string key]
         {
             get
             {
@@ -34,7 +34,7 @@ namespace CC_CEDICT.WindowsPhone
                 key = key.ToLower();
                 if (!lookup.ContainsKey(key))
                     lookup[key] = BinarySearch(key);
-                return lookup[key] < 0 ? null : this[lookup[key]].Values;
+                return lookup[key] < 0 ? null : this[lookup[key]].References;
             }
         }
 

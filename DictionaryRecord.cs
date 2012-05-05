@@ -69,15 +69,31 @@ namespace CC_CEDICT.WindowsPhone
                 String.Join("/", English));
         }
 
+        #region IComparable interface
+
         int IComparable.CompareTo(object obj)
         {
             DictionaryRecord other = (DictionaryRecord)obj;
+            // compare first by relevance
             if (this.Relevance > other.Relevance)
                 return -1;
-            else if (this.Relevance == other.Relevance)
-                return this.Chinese.Pinyin.CompareTo(other.Chinese.Pinyin);
-            else
+            if (this.Relevance < other.Relevance)
                 return 1;
+            // then by Pinyin
+            for (int i = 0; i < this.Chinese.Characters.Count; i++)
+            {
+                if (i >= other.Chinese.Characters.Count) // other is shorter than this
+                    return 1;
+                int cmp = this.Chinese.Characters[i].Pinyin.CompareTo(other.Chinese.Characters[i].Pinyin);
+                if (cmp != 0)
+                    return cmp;
+            }
+            if (this.Chinese.Characters.Count < other.Chinese.Characters.Count) // this is shorter than other
+                return -1;
+            // finally by English
+            return String.Join(";", this.English).CompareTo(String.Join(";", other.English));
         }
+
+        #endregion
     }
 }

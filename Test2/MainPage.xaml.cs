@@ -64,12 +64,16 @@ namespace Test2
             s = new Searcher(d, new Index("english.csv"), new Index("pinyin.csv"), new Index("hanzi.csv"));
         }
 
+        string lastQuery = "";
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             DateTime start = DateTime.Now;
-            List<DictionaryRecord> results = s.Search(Query.Text);
+            List<DictionaryRecord> results = s.Search(Query.Text, Query.Text.Equals(lastQuery) ? 1 : 75);
+            if (results.Count == 0)
+                results = s.Search(Query.Text);
+            lastQuery = Query.Text;
             TimeSpan elapsed = DateTime.Now - start;
-            Status.Text = String.Format("Search: '{0}' took {1:f2}s. ({2} results)", s.LastQuery, elapsed.TotalSeconds, results.Count);
+            Status.Text = String.Format("Search '{0}' took {1:f2}s. (showing {2} of {3} results)", s.LastQuery, elapsed.TotalSeconds, results.Count, s.Total);
             App.ViewModel.LoadData(results);
         }
     }

@@ -55,6 +55,7 @@
     <Compile Include="ILine.cs" />
     <Compile Include="IndexRecord.cs" />
     <Compile Include="Searcher.cs" />
+    <Compile Include="SearchResultAggregator.cs" />
     <Compile Include="StreamLineArray.cs" />
     <Compile Include="Pinyin.cs" />
     <Compile Include="Index.cs" />

@@ -49,14 +49,13 @@ namespace CC_CEDICT.WindowsPhone
             Debug.WriteLine(String.Format("Searcher initialisation took {0}ms", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
         }
 
-        public bool SmartSearch;
-        List<SearchTerm> _used = new List<SearchTerm>();
+        List<SearchResult> _used = new List<SearchResult>();
         public string LastQuery
         {
             get
             {
                 string query = "";
-                foreach (SearchTerm term in _used)
+                foreach (SearchResult term in _used)
                 {
                     if (query.Length > 0)
                         query += " ";
@@ -66,79 +65,97 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        public List<DictionaryRecord> Search(string query, int minRelevance=0)
+        public bool SmartSearch;
+        public List<DictionaryRecord> Search(string query, int minRelevance=1)
         {
             DateTime start = DateTime.Now;
             Debug.WriteLine(String.Format("Searching for: '{0}'", query));
 
             List<DictionaryRecord> results = new List<DictionaryRecord>();
             SmartSearch = false;
-            foreach (int i in AbstractSearch(query, minRelevance))
-                results.Add(dictionary[i]);
+            foreach (IndexRecord.Reference reference in AbstractSearch(query, minRelevance))
+            {
+                DictionaryRecord result = dictionary[reference.Index];
+                result.Relevance = reference.Relevance;
+                results.Add(result);
+            }
 
             Debug.WriteLine(String.Format("Actual query: '{0}' took {1}ms. and produced {2} results",
                 LastQuery,
                 ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds,
                 results.Count));
 
+            results.Sort();
             return results;
         }
 
-        List<int> AbstractSearch(string query, int minRelevance) // TODO: exact matches, in-order matches (esp. compound Pinyin)
+        public int Total;
+        List<IndexRecord.Reference> AbstractSearch(string query, int minRelevance)
         {
-            DateTime start = DateTime.Now;
-            List<int> results = new List<int>();
             query = query.Trim();
             if (query.Length == 0)
-                return results; // empty
+                return new List<IndexRecord.Reference>(); // empty
 
-            List<SearchTerm> terms = Tokenize(query);
+            SearchResultAggregator aggregator = new SearchResultAggregator();
+            List<SearchResult> terms = Tokenize(query, minRelevance);
+
             _used.Clear();
-            foreach (SearchTerm term in terms)
+            List<IndexRecord.Reference> tracker = new List<IndexRecord.Reference>();
+            foreach (SearchResult term in terms)
             {
-                if (term.Type == Type.Unknown || term.Results == null || term.Results.Count == 0)
+                if (term.Type == Type.Unknown)
                     continue;
 
-                if (results.Count == 0) // first time through the loop
-                {
-                    results.AddRange(term.Results);
-                }
+                if (tracker.Count == 0)
+                    tracker.AddRange(term.Results);
                 else
                 {
-                    List<int> temp = new List<int>(results);
+                    List<IndexRecord.Reference> temp = new List<IndexRecord.Reference>(tracker);
                     this.Intersect(ref temp, term.Results);
-                    if (temp.Count == 0) // this search term obliterates all results
-                        continue; // ignore
-                    results = new List<int>(temp);
+                    if (temp.Count == 0) // empty set (i.e. destroys results)
+                        continue;
+                    tracker = temp;
                 }
+
+                aggregator.Add(term.Results);
                 _used.Add(term);
             }
 
             if (_used.Count != terms.Count) // not all terms were used (duh!)
                 SmartSearch = true;
 
-            Debug.WriteLine(String.Format("AbstractSearch took {0}ms", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
+            List<IndexRecord.Reference> results = aggregator.Results(minRelevance);
+            Total = aggregator.Count;
+            Debug.WriteLine("Total results (pre-aggregation): " + Total);
             return results;
         }
 
-        struct SearchTerm
+        List<IndexRecord.Reference> Aggregate(List<SearchResult> results, int minRelevance=0)
+        {
+            SearchResultAggregator a = new SearchResultAggregator();
+            foreach (SearchResult r in results)
+                a.Add(r.Results);
+            return a.Results(minRelevance);
+        }
+
+        struct SearchResult
         {
             public string Term;
             public Pinyin Pinyin;
             public Type Type;
-            public Dictionary<int, int> Results;
+            public List<IndexRecord.Reference> Results;
         }
 
-        List<SearchTerm> Tokenize(string query, bool ignoreEnglish=false)
+        List<SearchResult> Tokenize(string query, int minRelevance=0, bool ignoreEnglish=false)
         {
-            List<SearchTerm> terms = new List<SearchTerm>();
+            List<SearchResult> results = new List<SearchResult>();
 
             // break query into individual terms
             char[] delim = { ' ' };
             foreach (string token in query.ToLower().Split(delim, StringSplitOptions.RemoveEmptyEntries))
             {
-                SearchTerm term = new SearchTerm { Term = token, Type = Type.Unknown };
-                Dictionary<int, int> items = new Dictionary<int, int>();
+                SearchResult result = new SearchResult { Term = token, Type = Type.Unknown };
+                List<IndexRecord.Reference> items = new List<IndexRecord.Reference>();
 
                 if (ContainsHanzi(token))
                 {
@@ -146,78 +163,90 @@ namespace CC_CEDICT.WindowsPhone
                     {
                         if ((items = index[Type.Hanzi][token]) != null) // found an exact match
                         {
-                            term.Type = Type.Hanzi;
-                            term.Term = token;
-                            term.Results = items;
-                            terms.Add(term);
+                            result.Type = Type.Hanzi;
+                            result.Term = token;
+                            result.Results = items;
+                            results.Add(result);
                         }
                         else if (token.Length > 1) // not found, so split and search
                         {
                             // TODO: this is where the intelligent Chinese wordsearch combinatorics come in :)
-                            terms.AddRange(Tokenize(String.Join(" ", token.ToCharArray())));
+                            results.AddRange(Tokenize(String.Join(" ", token.ToCharArray()), minRelevance));
                         }
                     }
                     else // some mixture of Hanzi and something else
                     {
-                        terms.AddRange(Tokenize(String.Join(" ", SegregateHanziNonHanzi(token))));
+                        results.AddRange(Tokenize(String.Join(" ", SegregateHanziNonHanzi(token)), minRelevance));
                     }
                     continue; // completely handled this token
                 }
 
-                if (pinyin.ContainsKey(token)) // Pinyin with no tone
+                if (pinyin.ContainsKey(token)) // Pinyin with no tone (check all the tones)
                 {
-                    List<int> temp;
+                    List<IndexRecord.Reference> temp;
                     if ((temp = index[Type.Pinyin][token]) != null) // try with no tone
                         items.AddRange(temp);
 
                     for (int i=1; i<=5; i++) // then go through all the tones
                         if ((temp = index[Type.Pinyin][token + i.ToString()]) != null)
-                            items.AddRange(temp);
+                            this.Unify(ref items, temp);
                     
-                    term.Type = Type.Pinyin;
-                    term.Pinyin = new Pinyin(token);
-                    term.Results = items;
+                    result.Type = Type.Pinyin;
+                    result.Pinyin = new Pinyin(token);
+                    result.Results = items;
                 }
-                else if ((items = index[Type.Pinyin][token]) != null) // Pinyin (with tone)
+                else if ((items = index[Type.Pinyin][token]) != null) // Pinyin (with tone)?
                 {
-                    term.Type = Type.Pinyin;
-                    term.Pinyin = new Pinyin(token);
-                    term.Results = items;
+                    result.Type = Type.Pinyin;
+                    result.Pinyin = new Pinyin(token);
+                    result.Results = items;
                 }
-                else // could be a compound Pinyin term?
+                
+                if (!ignoreEnglish && (items = index[Type.English][token]) != null) // English?
                 {
-                    Match match = compoundPinyin.Match(token);
-                    if (match.Groups.Count > 1) // yes, it was :)
+                    if (result.Type == Type.Pinyin) // already matched Pinyin
                     {
-                        foreach (Capture capture in match.Groups[1].Captures)
-                            terms.AddRange(Tokenize(capture.Value, true));
-                        continue;
-                    }
-                }
-
-                if (!ignoreEnglish && (items = index[Type.English][token]) != null) // English
-                {
-                    if (term.Type == Type.Pinyin) // already matched Pinyin
-                    {
-                        term.Type = Type.Ambiguous;
-                        term.Results.AddRange(items);
+                        result.Type = Type.Ambiguous;
+                        this.Unify(ref result.Results, items);
                     }
                     else // plain English
                     {
-                        term.Type = Type.English;
-                        term.Results = items;
+                        result.Type = Type.English;
+                        result.Results = items;
                     }
                 }
 
-                terms.Add(term);
-
+                results.Add(result);
+                
                 Debug.WriteLine(String.Format("Query term: '{0}' is {1} with {2} associated results.",
-                    term.Term,
-                    term.Type,
-                    term.Results == null ? 0 : term.Results.Count));
+                    result.Term,
+                    result.Type,
+                    result.Results == null ? 0 : result.Results.Count));
+
+                // might be compound Pinyin?
+                Match match = compoundPinyin.Match(token);
+                if (match.Groups.Count > 1 && match.Groups[1].Captures.Count > 1) // yes, it was :)
+                {
+                    List<SearchResult> temp = new List<SearchResult>();
+                    foreach (Capture capture in match.Groups[1].Captures)
+                        temp.AddRange(Tokenize(capture.Value, minRelevance, true));
+                    if (temp.Count == 0) // compound was a red-herring, e.g. secure -> se cu re
+                        continue;
+                    else if (result.Type == Type.Unknown)
+                        results.AddRange(temp);
+                    else
+                    {
+                        List<IndexRecord.Reference> list = Aggregate(temp, minRelevance);
+                        if (list.Count > 0)
+                        {
+                            //terms.AddRange(temp);
+                            this.Unify(ref result.Results, list); // include sub-matches
+                        }
+                    }
+                }
             }
 
-            return terms;
+            return results;
         }
 
         static Regex containsHanziRegex = new Regex("([\\u2600-\\uffff])");
@@ -266,13 +295,34 @@ namespace CC_CEDICT.WindowsPhone
             return chunks;
         }
 
-        void Intersect(ref List<int> target, List<int> items)
+        void Intersect<T>(ref List<T> target, List<T> items)
         {
             if (items == null)
                 return;
             for (int i = target.Count - 1; i >= 0; i--)
                 if (!items.Contains(target[i]))
                     target.RemoveAt(i);
+        }
+
+        void Unify(ref List<IndexRecord.Reference> target, List<IndexRecord.Reference> items) // i.e. create a union
+        {
+            if (items == null)
+                return;
+            DateTime start = DateTime.Now;
+            for (int i = 0; i <= items.Count - 1; i++)
+            {
+                if (!target.Contains(items[i]))
+                {
+                    target.Add(items[i]);
+                }
+                else // it's there but we need to update if the relevance is higher
+                {
+                    int j = target.IndexOf(items[i]);
+                    if (target[j].Relevance < items[i].Relevance)
+                        target[j] = items[i];
+                }
+            }
+            Debug.WriteLine(String.Format("(total time spent in Unify: {0}ms.)", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
         }
     }
 }

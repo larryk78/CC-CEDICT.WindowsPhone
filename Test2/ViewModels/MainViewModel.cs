@@ -88,7 +88,7 @@ namespace Test2
             foreach (DictionaryRecord r in items)
                 this.Items.Add(new ItemViewModel()
                 {
-                    LineOne = String.Format("{0} {1}", r.Chinese.Simplified, r.Chinese.Pinyin),
+                    LineOne = String.Format("[{0}] {1} {2}", r.Relevance, r.Chinese.Simplified, r.Chinese.Pinyin),
                     LineTwo = String.Join("; ", r.English),
                     Index = r.Index
                 });

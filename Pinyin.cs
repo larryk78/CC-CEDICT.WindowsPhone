@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class Pinyin
+    public class Pinyin : IComparable
     {
         public string Original;
         public string Syllable;
@@ -35,7 +35,7 @@ namespace CC_CEDICT.WindowsPhone
             throw new FormatException(String.Format("Invalid Pinyin: '{0}'", Original));
         }
 
-        #region Pinyin markup
+        #region Pinyin markup implementation
 
         static Dictionary<char, char[]> markupTable = new Dictionary<char, char[]>
         {
@@ -105,6 +105,17 @@ namespace CC_CEDICT.WindowsPhone
                 default:
                     throw new FormatException("confused.com");
             }
+        }
+
+        #endregion
+
+        #region IComparable interface
+
+        public int CompareTo(object obj)
+        {
+            Pinyin other = (Pinyin)obj;
+            int cmp = this.Syllable.ToLower().CompareTo(other.Syllable.ToLower());
+            return cmp != 0 ? cmp : ((int)this.Tone).CompareTo((int)other.Tone);
         }
 
         #endregion
