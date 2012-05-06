@@ -138,12 +138,34 @@ namespace CC_CEDICT.WindowsPhone
             return a.Results(minRelevance);
         }
 
-        struct SearchResult
+        class SearchResult
         {
             public string Term;
             public Pinyin Pinyin;
             public Type Type;
-            public List<IndexRecord.Reference> Results;
+            
+            Dictionary<int, IndexRecord.Reference> _results = new Dictionary<int, IndexRecord.Reference>();
+            public List<IndexRecord.Reference> Results
+            {
+                get
+                {
+                    List<IndexRecord.Reference> list = new List<IndexRecord.Reference>();
+                    foreach (int key in _results.Keys)
+                        list.Add(_results[key]);
+                    return list;
+                }
+            }
+
+            public void Add(List<IndexRecord.Reference> references)
+            {
+                foreach (IndexRecord.Reference r in references)
+                {
+                    if (!_results.ContainsKey(r.Index))
+                        _results.Add(r.Index, r);
+                    else if (r.Relevance > _results[r.Index].Relevance)
+                        _results[r.Index] = r;
+                }
+            }       
         }
 
         List<SearchResult> Tokenize(string query, int minRelevance=0, bool ignoreEnglish=false)
@@ -165,7 +187,7 @@ namespace CC_CEDICT.WindowsPhone
                         {
                             result.Type = Type.Hanzi;
                             result.Term = token;
-                            result.Results = items;
+                            result.Add(items);
                             results.Add(result);
                         }
                         else if (token.Length > 1) // not found, so split and search
@@ -183,37 +205,27 @@ namespace CC_CEDICT.WindowsPhone
 
                 if (pinyin.ContainsKey(token)) // Pinyin with no tone (check all the tones)
                 {
-                    List<IndexRecord.Reference> temp;
-                    if ((temp = index[Type.Pinyin][token]) != null) // try with no tone
-                        items.AddRange(temp);
-
-                    for (int i=1; i<=5; i++) // then go through all the tones
-                        if ((temp = index[Type.Pinyin][token + i.ToString()]) != null)
-                            this.Unify(ref items, temp);
-                    
                     result.Type = Type.Pinyin;
                     result.Pinyin = new Pinyin(token);
-                    result.Results = items;
+
+                    if ((items = index[Type.Pinyin][token]) != null) // try with no tone
+                        result.Add(items);
+
+                    for (int i=1; i<=5; i++) // then go through all the tones
+                        if ((items = index[Type.Pinyin][token + i.ToString()]) != null)
+                            result.Add(items);
                 }
                 else if ((items = index[Type.Pinyin][token]) != null) // Pinyin (with tone)?
                 {
                     result.Type = Type.Pinyin;
                     result.Pinyin = new Pinyin(token);
-                    result.Results = items;
+                    result.Add(items);
                 }
                 
                 if (!ignoreEnglish && (items = index[Type.English][token]) != null) // English?
                 {
-                    if (result.Type == Type.Pinyin) // already matched Pinyin
-                    {
-                        result.Type = Type.Ambiguous;
-                        this.Unify(ref result.Results, items);
-                    }
-                    else // plain English
-                    {
-                        result.Type = Type.English;
-                        result.Results = items;
-                    }
+                    result.Type = (result.Type == Type.Pinyin) ? Type.Ambiguous : Type.English;
+                    result.Add(items);
                 }
 
                 results.Add(result);
@@ -236,12 +248,9 @@ namespace CC_CEDICT.WindowsPhone
                         results.AddRange(temp);
                     else
                     {
-                        List<IndexRecord.Reference> list = Aggregate(temp, minRelevance);
-                        if (list.Count > 0)
-                        {
-                            //terms.AddRange(temp);
-                            this.Unify(ref result.Results, list); // include sub-matches
-                        }
+                        items = Aggregate(temp, minRelevance);
+                        if (items.Count > 0)
+                            result.Add(items);
                     }
                 }
             }
@@ -302,27 +311,6 @@ namespace CC_CEDICT.WindowsPhone
             for (int i = target.Count - 1; i >= 0; i--)
                 if (!items.Contains(target[i]))
                     target.RemoveAt(i);
-        }
-
-        void Unify(ref List<IndexRecord.Reference> target, List<IndexRecord.Reference> items) // i.e. create a union
-        {
-            if (items == null)
-                return;
-            DateTime start = DateTime.Now;
-            for (int i = 0; i <= items.Count - 1; i++)
-            {
-                if (!target.Contains(items[i]))
-                {
-                    target.Add(items[i]);
-                }
-                else // it's there but we need to update if the relevance is higher
-                {
-                    int j = target.IndexOf(items[i]);
-                    if (target[j].Relevance < items[i].Relevance)
-                        target[j] = items[i];
-                }
-            }
-            Debug.WriteLine(String.Format("(total time spent in Unify: {0}ms.)", ((TimeSpan)(DateTime.Now - start)).TotalMilliseconds));
         }
     }
 }
