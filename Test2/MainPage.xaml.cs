@@ -68,10 +68,11 @@ namespace Test2
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             DateTime start = DateTime.Now;
-            List<DictionaryRecord> results = s.Search(Query.Text, Query.Text.Equals(lastQuery) ? 1 : 75);
+            string query = Query.Text;
+            List<DictionaryRecord> results = s.Search(query, query.Equals(lastQuery) ? 1 : 75);
             if (results.Count == 0)
-                results = s.Search(Query.Text);
-            lastQuery = Query.Text;
+                results = s.Search(query);
+            lastQuery = query;
             TimeSpan elapsed = DateTime.Now - start;
             Status.Text = String.Format("Search '{0}' took {1:f2}s. (showing {2} of {3} results)", s.LastQuery, elapsed.TotalSeconds, results.Count, s.Total);
             App.ViewModel.LoadData(results);
