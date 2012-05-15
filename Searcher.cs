@@ -66,8 +66,6 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        // TODO-MUST: fix the mixed hanzi+anything combo search!
-
         public List<DictionaryRecord> Search(string query, int minRelevance=1)
         {
             DateTime start = DateTime.Now;
@@ -175,7 +173,8 @@ namespace CC_CEDICT.WindowsPhone
             }       
         }
 
-        List<SearchResult> Tokenize(string query, int minRelevance=0, bool ignoreEnglish=false)
+        enum SearchFlags { None = 0, IgnoreEnglish = 1, AlwaysSplitHanzi = 2 };
+        List<SearchResult> Tokenize(string query, int minRelevance=0, SearchFlags flags = SearchFlags.None)
         {
             List<SearchResult> results = new List<SearchResult>();
 
@@ -190,7 +189,8 @@ namespace CC_CEDICT.WindowsPhone
                 {
                     if (OnlyHanzi(token)) // full Hanzi token
                     {
-                        if ((items = index[Type.Hanzi][token]) != null) // found an exact match
+                        if ((token.Length == 1 || (flags & SearchFlags.AlwaysSplitHanzi) > 0)
+                            && (items = index[Type.Hanzi][token]) != null) // found an exact match (TODO: too strict?)
                         {
                             result.Type = Type.Hanzi;
                             result.Term = token;
@@ -202,12 +202,12 @@ namespace CC_CEDICT.WindowsPhone
                             // TODO: this is where the intelligent Chinese wordsearch combinatorics come in :)
                             results.AddRange(Tokenize(String.Join(" ", token.ToCharArray()), minRelevance));
                         }
+                        continue; // completely handled this token
                     }
                     else // some mixture of Hanzi and something else
                     {
                         results.AddRange(Tokenize(String.Join(" ", SegregateHanziNonHanzi(token)), minRelevance));
                     }
-                    continue; // completely handled this token
                 }
 
                 if (pinyin.ContainsKey(token)) // Pinyin with no tone (check all the tones)
@@ -229,7 +229,7 @@ namespace CC_CEDICT.WindowsPhone
                     result.Add(items);
                 }
                 
-                if (!ignoreEnglish && (items = index[Type.English][token]) != null) // English?
+                if ((flags & SearchFlags.IgnoreEnglish) == 0 && (items = index[Type.English][token]) != null) // English?
                 {
                     result.Type = (result.Type == Type.Pinyin) ? Type.Ambiguous : Type.English;
                     result.Add(items);
@@ -248,7 +248,7 @@ namespace CC_CEDICT.WindowsPhone
                 {
                     List<SearchResult> temp = new List<SearchResult>();
                     foreach (Capture capture in match.Groups[1].Captures)
-                        temp.AddRange(Tokenize(capture.Value, minRelevance, true));
+                        temp.AddRange(Tokenize(capture.Value, minRelevance, SearchFlags.IgnoreEnglish));
                     if (temp.Count == 0) // compound was a red-herring, e.g. secure -> se cu re
                         continue;
                     else if (result.Type == Type.Unknown)
