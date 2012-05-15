@@ -50,6 +50,7 @@ namespace CC_CEDICT.WindowsPhone
         }
 
         List<SearchResult> _used = new List<SearchResult>();
+        List<SearchResult> Unused = new List<SearchResult>();
         public string LastQuery
         {
             get
@@ -65,14 +66,14 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        public bool SmartSearch;
+        // TODO-MUST: fix the mixed hanzi+anything combo search!
+
         public List<DictionaryRecord> Search(string query, int minRelevance=1)
         {
             DateTime start = DateTime.Now;
             Debug.WriteLine(String.Format("Searching for: '{0}'", query));
 
             List<DictionaryRecord> results = new List<DictionaryRecord>();
-            SmartSearch = false;
             foreach (IndexRecord.Reference reference in AbstractSearch(query, minRelevance))
             {
                 DictionaryRecord result = dictionary[reference.Index];
@@ -89,6 +90,7 @@ namespace CC_CEDICT.WindowsPhone
             return results;
         }
 
+        public bool SmartSearch;
         public int Total;
         List<IndexRecord.Reference> AbstractSearch(string query, int minRelevance)
         {
@@ -96,10 +98,12 @@ namespace CC_CEDICT.WindowsPhone
             if (query.Length == 0)
                 return new List<IndexRecord.Reference>(); // empty
 
+            SmartSearch = false;
             SearchResultAggregator aggregator = new SearchResultAggregator();
             List<SearchResult> terms = Tokenize(query, minRelevance);
 
             _used.Clear();
+            Unused.Clear();
             List<IndexRecord.Reference> tracker = new List<IndexRecord.Reference>();
             foreach (SearchResult term in terms)
             {
@@ -113,7 +117,10 @@ namespace CC_CEDICT.WindowsPhone
                     List<IndexRecord.Reference> temp = new List<IndexRecord.Reference>(tracker);
                     this.Intersect(ref temp, term.Results);
                     if (temp.Count == 0) // empty set (i.e. destroys results)
+                    {
+                        Unused.Add(term);
                         continue;
+                    }
                     tracker = temp;
                 }
 
@@ -121,7 +128,7 @@ namespace CC_CEDICT.WindowsPhone
                 _used.Add(term);
             }
 
-            if (_used.Count != terms.Count) // not all terms were used (duh!)
+            if (Unused.Count > 0) // not all terms were used (duh!)
                 SmartSearch = true;
 
             List<IndexRecord.Reference> results = aggregator.Results(minRelevance);
@@ -301,6 +308,7 @@ namespace CC_CEDICT.WindowsPhone
                     lastWasHanzi = false;
                 }
             }
+            chunks.Add(hanziChunk.Length > 0 ? hanziChunk : otherChunk);
             return chunks;
         }
 

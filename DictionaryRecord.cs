@@ -71,6 +71,8 @@ namespace CC_CEDICT.WindowsPhone
 
         #region IComparable interface
 
+        // TODO-NTH: sort chinese by stroke count and popularity and in-order chinese (and deprioritise "variant of...")
+
         int IComparable.CompareTo(object obj)
         {
             DictionaryRecord other = (DictionaryRecord)obj;
