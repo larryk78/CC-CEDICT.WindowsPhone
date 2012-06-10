@@ -50,7 +50,6 @@ namespace CC_CEDICT.WindowsPhone
         }
 
         List<SearchResult> _used = new List<SearchResult>();
-        List<SearchResult> Unused = new List<SearchResult>();
         public string LastQuery
         {
             get
@@ -63,6 +62,22 @@ namespace CC_CEDICT.WindowsPhone
                     query += term.Type == Type.Pinyin ? term.Pinyin.Original : term.Term;
                 }
                 return query;
+            }
+        }
+
+        List<SearchResult> _unused = new List<SearchResult>();
+        public string Ignored
+        {
+            get
+            {
+                string terms = "";
+                foreach (SearchResult term in _unused)
+                {
+                    if (terms.Length > 0)
+                        terms += " ";
+                    terms += term.Type == Type.Pinyin ? term.Pinyin.Original : term.Term;
+                }
+                return terms;
             }
         }
 
@@ -96,17 +111,22 @@ namespace CC_CEDICT.WindowsPhone
             if (query.Length == 0)
                 return new List<IndexRecord.Reference>(); // empty
 
-            SmartSearch = false;
             SearchResultAggregator aggregator = new SearchResultAggregator();
             List<SearchResult> terms = Tokenize(query, minRelevance);
 
+            SmartSearch = false;
             _used.Clear();
-            Unused.Clear();
+            _unused.Clear();
+            
             List<IndexRecord.Reference> tracker = new List<IndexRecord.Reference>();
             foreach (SearchResult term in terms)
             {
                 if (term.Type == Type.Unknown)
+                {
+                    _unused.Add(term);
+                    SmartSearch = true;
                     continue;
+                }
 
                 if (tracker.Count == 0)
                     tracker.AddRange(term.Results);
@@ -116,7 +136,8 @@ namespace CC_CEDICT.WindowsPhone
                     this.Intersect(ref temp, term.Results);
                     if (temp.Count == 0) // empty set (i.e. destroys results)
                     {
-                        Unused.Add(term);
+                        _unused.Add(term);
+                        SmartSearch = true;
                         continue;
                     }
                     tracker = temp;
@@ -125,9 +146,6 @@ namespace CC_CEDICT.WindowsPhone
                 aggregator.Add(term.Results);
                 _used.Add(term);
             }
-
-            if (Unused.Count > 0) // not all terms were used (duh!)
-                SmartSearch = true;
 
             List<IndexRecord.Reference> results = aggregator.Results(minRelevance);
             Total = aggregator.Count;
@@ -234,9 +252,9 @@ namespace CC_CEDICT.WindowsPhone
                     result.Type = (result.Type == Type.Pinyin) ? Type.Ambiguous : Type.English;
                     result.Add(items);
                 }
-
-                results.Add(result);
                 
+                results.Add(result);
+
                 Debug.WriteLine(String.Format("Query term: '{0}' is {1} with {2} associated results.",
                     result.Term,
                     result.Type,
@@ -251,13 +269,16 @@ namespace CC_CEDICT.WindowsPhone
                         temp.AddRange(Tokenize(capture.Value, minRelevance, SearchFlags.IgnoreEnglish));
                     if (temp.Count == 0) // compound was a red-herring, e.g. secure -> se cu re
                         continue;
-                    else if (result.Type == Type.Unknown)
-                        results.AddRange(temp);
-                    else
+                    if (result.Type == Type.Unknown)
+                    {
+                        results.RemoveAt(results.Count - 1); // delete the pre-split compound result (that didn't match anything)
+                        results.AddRange(temp); // add the post-split results instead
+                    }
+                    else // matched both pre-split and post-split, e.g. Beijing matches English and Bei jing Pinyin
                     {
                         items = Aggregate(temp, minRelevance);
                         if (items.Count > 0)
-                            result.Add(items);
+                            result.Add(items); // append aggregated post-split results to existing result
                     }
                 }
             }
