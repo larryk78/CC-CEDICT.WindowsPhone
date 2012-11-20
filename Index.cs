@@ -21,8 +21,10 @@ namespace CC_CEDICT.WindowsPhone
                 if (store.FileExists(path))
                 {
                     Debug.WriteLine(String.Format("Loading index file: {0}", path));
-                    Read(new IsolatedStorageFileStream(path, FileMode.Open, store));
-                    loaded = true;
+                    Stream stream = new IsolatedStorageFileStream(path, FileMode.Open, store);
+                    if (!stream.CanRead)
+                        return;
+                    loaded = Read(stream);
                 }
             }
         }

@@ -16,7 +16,7 @@ namespace CC_CEDICT.WindowsPhone
         {
         }
 
-        protected void Read(Stream stream)
+        protected bool Read(Stream stream)
         {
             this.stream = stream;
             offsets.Clear();
@@ -50,8 +50,13 @@ namespace CC_CEDICT.WindowsPhone
                 done += size;
             }
 
+            if (offsets.Count == 0)
+                return false;
+
             if (offsets[offsets.Count - 1] != done) // newline at EOF is missing
                 offsets.Add(done + (int)lineEndingLength);
+
+            return true;
         }
 
         protected virtual bool ProcessHeader(ref byte[] data, int offset, int length)
