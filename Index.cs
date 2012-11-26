@@ -42,48 +42,30 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        static CultureInfo en_US = new CultureInfo("en-US");
         int BinarySearch(string key)
         {
-            CultureInfo old = null;
-            if (Thread.CurrentThread.CurrentCulture.Name != en_US.Name) // Hanzi might not sort properly
+            CompareInfo ci = new CultureInfo("en-US").CompareInfo;
+            int min = 0, pos, max = this.Count - 1;
+            while (min <= max)
             {
-                old = Thread.CurrentThread.CurrentCulture;
-                Thread.CurrentThread.CurrentCulture = en_US;
-                Debug.WriteLine("Culture: {0} changed to {1}", old.Name, en_US.Name);
-            }
-            try
-            {
-                int min = 0, pos, max = this.Count - 1;
-                while (min <= max)
+                pos = (min + max) / 2;
+                switch (ci.Compare(key, this[pos].Key, CompareOptions.StringSort))
                 {
-                    pos = (min + max) / 2;
-                    switch (key.CompareTo(this[pos].Key))
-                    {
-                        case -1:
-                            max = pos - 1;
-                            Debug.WriteLine("BinarySearch: compare {0} to {1} (down)", key, this[pos].Key);
-                            break;
-                        case 0:
-                            Debug.WriteLine("BinarySearch: compare {0} to {1} (MATCH)", key, this[pos].Key);
-                            return pos;
-                        case 1:
-                            min = pos + 1;
-                            Debug.WriteLine("BinarySearch: compare {0} to {1} (up)", key, this[pos].Key);
-                            break;
-                    }
-                }
-                Debug.WriteLine("BinarySearch: not found.");
-                return -1;
-            }
-            finally // restore CultureInfo if changed earlier
-            {
-                if (old != null)
-                {
-                    Thread.CurrentThread.CurrentCulture = old;
-                    Debug.WriteLine("Culture: reset to {0}", old.Name);
+                    case -1:
+                        max = pos - 1;
+                        Debug.WriteLine("BinarySearch: compare {0} to {1} (down)", key, this[pos].Key);
+                        break;
+                    case 0:
+                        Debug.WriteLine("BinarySearch: compare {0} to {1} (MATCH)", key, this[pos].Key);
+                        return pos;
+                    case 1:
+                        min = pos + 1;
+                        Debug.WriteLine("BinarySearch: compare {0} to {1} (up)", key, this[pos].Key);
+                        break;
                 }
             }
+            Debug.WriteLine("BinarySearch: not found.");
+            return -1;
         }
     }
 }
