@@ -49,8 +49,8 @@ namespace CC_CEDICT.WindowsPhone
             { 'O', new char[5]{ 'O', '\u014c', '\u00d3', '\u01d1', '\u00d2' } },
             { 'u', new char[5]{ 'u', '\u016b', '\u00fa', '\u01d4', '\u00f9' } },
             { 'U', new char[5]{ 'U', '\u016a', '\u00da', '\u01d3', '\u00d9' } },
-            { 'v', new char[5]{ 'v', '\u01d6', '\u01d8', '\u01da', '\u01dc' } },
-            { 'V', new char[5]{ 'V', '\u01d5', '\u01d7', '\u01d9', '\u01db' } }
+            { 'v', new char[5]{ '\u00fc', '\u01d6', '\u01d8', '\u01da', '\u01dc' } },
+            { 'V', new char[5]{ '\u00dc', '\u01d5', '\u01d7', '\u01d9', '\u01db' } }
         };
 
         static string initial = "(?:[bcdfghjklmnpqrstwxyz]|[csz]h)";
@@ -86,6 +86,12 @@ namespace CC_CEDICT.WindowsPhone
                         else
                             _markedup = Syllable;
                     }
+
+                    // special case, e.g. lve - the e takes the tone mark so v still needs to become u:
+                    if (_markedup.Contains("v"))
+                        _markedup = _markedup.Replace("v", markupTable['v'][0].ToString());
+                    if (_markedup.Contains("V"))
+                        _markedup = _markedup.Replace("V", markupTable['V'][0].ToString());
                 }
                 return _markedup;
             }
