@@ -65,7 +65,7 @@ namespace CC_CEDICT.WindowsPhone
             return String.Format("{0} {1} [{2}] /{3}/",
                 Chinese.Traditional,
                 Chinese.Simplified,
-                Chinese.Pinyin,
+                Chinese.PinyinNoMarkup,
                 String.Join("/", English));
         }
 

@@ -16,9 +16,10 @@ namespace CC_CEDICT.WindowsPhone
         
         public string Traditional;
         public string Simplified;
+        public string PinyinNoMarkup;
 
         bool pinyinMarkupDone = false;
-        string _pinyin;
+        string _Pinyin;
         public string Pinyin
         {
             get
@@ -26,14 +27,14 @@ namespace CC_CEDICT.WindowsPhone
                 if (!pinyinMarkupDone)
                 {
                     foreach (Character c in Characters)
-                        _pinyin = _pinyin.Replace(c.Pinyin.Original, c.Pinyin.MarkedUp);
+                        _Pinyin = _Pinyin.Replace(c.Pinyin.Original, c.Pinyin.MarkedUp);
                     pinyinMarkupDone = true;
                 }
-                return _pinyin;
+                return _Pinyin;
             }
             set
             {
-                _pinyin = value;
+                _Pinyin = value;
                 pinyinMarkupDone = false;
             }
         }
@@ -43,6 +44,7 @@ namespace CC_CEDICT.WindowsPhone
             // store the original values (contains punctuation)
             Traditional = traditional;
             Simplified = simplified;
+            PinyinNoMarkup = pinyin;
             Pinyin = pinyin.Replace("u:", "v");
 
             // split to individual characters
