@@ -5,7 +5,7 @@ using System.IO;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class StreamLineArray<T> : IEnumerable<T> where T : ILine, new()
+    public class StreamLineArray<T> : IDisposable, IEnumerable<T> where T : ILine, new()
     {
         Stream stream;
         enum LineEndingLength { Unknown = 0, Unix = 1, DOS = 2 };
@@ -92,6 +92,16 @@ namespace CC_CEDICT.WindowsPhone
                 return offsets.Count - 1;
             }
         }
+
+        #region IDisposable implementation
+
+        public void Dispose()
+        {
+            if (stream != null)
+                stream.Close();
+        }
+
+        #endregion
 
         #region IEnumerable implementation
 

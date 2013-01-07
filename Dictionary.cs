@@ -9,7 +9,7 @@ namespace CC_CEDICT.WindowsPhone
     public class Dictionary : StreamLineArray<DictionaryRecord>
     {
         public Dictionary<string, string> Header = new Dictionary<string, string>();
-        
+
         public Dictionary(string path)
         {
             using (IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication())
