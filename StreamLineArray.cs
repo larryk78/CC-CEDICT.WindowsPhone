@@ -89,7 +89,8 @@ namespace CC_CEDICT.WindowsPhone
         {
             get
             {
-                return offsets.Count - 1;
+                int n = offsets.Count - 1;
+                return (n < 0) ? 0 : n;
             }
         }
 
