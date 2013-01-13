@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CC_CEDICT.WindowsPhone
 {
-    public class DictionaryRecord : ILine, IComparable
+    public class DictionaryRecord : ILine, IComparable, IEquatable<DictionaryRecord>
     {
         public Chinese Chinese = null;
         public List<string> English = new List<string>();
@@ -94,6 +94,15 @@ namespace CC_CEDICT.WindowsPhone
                 return -1;
             // finally by English
             return String.Join(";", this.English).CompareTo(String.Join(";", other.English));
+        }
+
+        #endregion
+
+        #region IEquatable interface
+
+        public bool Equals(DictionaryRecord other)
+        {
+            return this.ToString().Equals(other.ToString());
         }
 
         #endregion
