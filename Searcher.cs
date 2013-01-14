@@ -87,7 +87,7 @@ namespace CC_CEDICT.WindowsPhone
             Debug.WriteLine(String.Format("Searching for: '{0}'", query));
 
             List<DictionaryRecord> results = new List<DictionaryRecord>();
-            foreach (IndexRecord.Reference reference in AbstractSearch(query, minRelevance))
+            foreach (IndexReference reference in AbstractSearch(query, minRelevance))
             {
                 DictionaryRecord result = dictionary[reference.Index];
                 result.Relevance = reference.Relevance;
@@ -105,11 +105,11 @@ namespace CC_CEDICT.WindowsPhone
 
         public bool SmartSearch;
         public int Total;
-        List<IndexRecord.Reference> AbstractSearch(string query, int minRelevance)
+        List<IndexReference> AbstractSearch(string query, int minRelevance)
         {
             query = query.Trim();
             if (query.Length == 0)
-                return new List<IndexRecord.Reference>(); // empty
+                return new List<IndexReference>(); // empty
 
             SearchResultAggregator aggregator = new SearchResultAggregator();
             List<SearchResult> terms = Tokenize(query, minRelevance);
@@ -118,7 +118,7 @@ namespace CC_CEDICT.WindowsPhone
             _used.Clear();
             _unused.Clear();
             
-            List<IndexRecord.Reference> tracker = new List<IndexRecord.Reference>();
+            List<IndexReference> tracker = new List<IndexReference>();
             foreach (SearchResult term in terms)
             {
                 if (term.Type == Type.Unknown)
@@ -132,7 +132,7 @@ namespace CC_CEDICT.WindowsPhone
                     tracker.AddRange(term.Results);
                 else
                 {
-                    List<IndexRecord.Reference> temp = new List<IndexRecord.Reference>(tracker);
+                    List<IndexReference> temp = new List<IndexReference>(tracker);
                     this.Intersect(ref temp, term.Results);
                     if (temp.Count == 0) // empty set (i.e. destroys results)
                     {
@@ -147,13 +147,13 @@ namespace CC_CEDICT.WindowsPhone
                 _used.Add(term);
             }
 
-            List<IndexRecord.Reference> results = aggregator.Results(minRelevance);
+            List<IndexReference> results = aggregator.Results(minRelevance);
             Total = aggregator.Count;
             Debug.WriteLine("Total results (pre-aggregation): " + Total);
             return results;
         }
 
-        List<IndexRecord.Reference> Aggregate(List<SearchResult> results, int minRelevance=0)
+        List<IndexReference> Aggregate(List<SearchResult> results, int minRelevance=0)
         {
             SearchResultAggregator a = new SearchResultAggregator();
             foreach (SearchResult r in results)
@@ -167,21 +167,21 @@ namespace CC_CEDICT.WindowsPhone
             public Pinyin Pinyin;
             public Type Type;
             
-            Dictionary<int, IndexRecord.Reference> _results = new Dictionary<int, IndexRecord.Reference>();
-            public List<IndexRecord.Reference> Results
+            Dictionary<int, IndexReference> _results = new Dictionary<int, IndexReference>();
+            public List<IndexReference> Results
             {
                 get
                 {
-                    List<IndexRecord.Reference> list = new List<IndexRecord.Reference>();
+                    List<IndexReference> list = new List<IndexReference>();
                     foreach (int key in _results.Keys)
                         list.Add(_results[key]);
                     return list;
                 }
             }
 
-            public void Add(List<IndexRecord.Reference> references)
+            public void Add(List<IndexReference> references)
             {
-                foreach (IndexRecord.Reference r in references)
+                foreach (IndexReference r in references)
                 {
                     if (!_results.ContainsKey(r.Index))
                         _results.Add(r.Index, r);
@@ -195,24 +195,24 @@ namespace CC_CEDICT.WindowsPhone
         List<SearchResult> Tokenize(string query, int minRelevance=0, SearchFlags flags = SearchFlags.None)
         {
             List<SearchResult> results = new List<SearchResult>();
+            List<IndexReference> items = new List<IndexReference>();
 
             // break query into individual terms
             char[] delim = { ' ' };
             foreach (string token in query.ToLower().Split(delim, StringSplitOptions.RemoveEmptyEntries))
             {
                 SearchResult result = new SearchResult { Term = token, Type = Type.Unknown };
-                List<IndexRecord.Reference> items = new List<IndexRecord.Reference>();
 
                 if (ContainsHanzi(token))
                 {
                     if (OnlyHanzi(token)) // full Hanzi token
                     {
-                        if ((token.Length == 1 || (flags & SearchFlags.AlwaysSplitHanzi) > 0)
-                            && (items = index[Type.Hanzi][token]) != null) // found an exact match (TODO: too strict?)
+                        IndexRecord hanziLookup = index[Type.Hanzi][token];
+                        if ((token.Length == 1 || (flags & SearchFlags.AlwaysSplitHanzi) > 0) && hanziLookup != null) // found an exact match (TODO: too strict?)
                         {
                             result.Type = Type.Hanzi;
                             result.Term = token;
-                            result.Add(items);
+                            result.Add(hanziLookup.References);
                             results.Add(result);
                         }
                         else if (token.Length > 1) // not found, so split and search
@@ -228,29 +228,34 @@ namespace CC_CEDICT.WindowsPhone
                     }
                 }
 
+                IndexRecord pinyinLookup = index[Type.Pinyin][token];
                 if (pinyin.ContainsKey(token)) // Pinyin with no tone (check all the tones)
                 {
                     result.Type = Type.Pinyin;
                     result.Pinyin = new Pinyin(token);
 
-                    if ((items = index[Type.Pinyin][token]) != null) // try with no tone
-                        result.Add(items);
+                    if (pinyinLookup != null) // try with no tone
+                        result.Add(pinyinLookup.References);
 
-                    for (int i=1; i<=5; i++) // then go through all the tones
-                        if ((items = index[Type.Pinyin][token + i.ToString()]) != null)
-                            result.Add(items);
+                    for (int i = 1; i <= 5; i++) // then go through all the tones
+                    {
+                        IndexRecord pinyinWithToneLookup = index[Type.Pinyin][token + i.ToString()];
+                        if (pinyinWithToneLookup != null)
+                            result.Add(pinyinWithToneLookup.References);
+                    }
                 }
-                else if ((items = index[Type.Pinyin][token]) != null) // Pinyin (with tone)?
+                else if (pinyinLookup != null) // Pinyin (with tone)?
                 {
                     result.Type = Type.Pinyin;
                     result.Pinyin = new Pinyin(token);
-                    result.Add(items);
+                    result.Add(pinyinLookup.References);
                 }
                 
-                if ((flags & SearchFlags.IgnoreEnglish) == 0 && (items = index[Type.English][token]) != null) // English?
+                IndexRecord englishLookup = index[Type.English][token];
+                if ((flags & SearchFlags.IgnoreEnglish) == 0 && englishLookup != null) // English?
                 {
                     result.Type = (result.Type == Type.Pinyin) ? Type.Ambiguous : Type.English;
-                    result.Add(items);
+                    result.Add(englishLookup.References);
                 }
                 
                 results.Add(result);

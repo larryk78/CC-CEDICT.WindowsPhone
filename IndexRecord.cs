@@ -26,53 +26,11 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
 
-        public class Reference : IComparable, IEquatable<Reference>
-        {
-            public string Key;
-            public int Index;
-            public int Relevance;
-
-            #region IComparable interface
-
-            int IComparable.CompareTo(object obj)
-            {
-                Reference other = (Reference)obj;
-                if (this.Relevance > other.Relevance)
-                    return -1;
-                else if (this.Relevance == other.Relevance)
-                    return this.Key.CompareTo(other.Key);
-                else
-                    return 1;
-            }
-
-            #endregion
-
-            #region IEquatable<Reference> interface
-
-            public bool Equals(Reference other)
-            {
-                return Index == other.Index;
-            }
-
-            #endregion
-
-            public override bool Equals(object obj)
-            {
-                Reference other = (Reference)obj;
-                return other != null && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return Index.GetHashCode();
-            }
-        }
-
         static char[] comma = { ',' }; // index lines are comma-separated (CSV)
         static char[] pipe  = { '|' }; // CSV elements are pipe-separated
 
-        List<Reference> _refs = new List<Reference>();
-        public List<Reference> References
+        List<IndexReference> _refs = new List<IndexReference>();
+        public List<IndexReference> References
         {
             get
             {
@@ -84,7 +42,7 @@ namespace CC_CEDICT.WindowsPhone
                         int index, relevance;
                         Int32.TryParse(fields[0], out index);
                         Int32.TryParse(fields[1], out relevance);
-                        _refs.Add(new Reference { Key = this.Key, Index = index, Relevance = relevance });
+                        _refs.Add(new IndexReference { Key = this.Key, Index = index, Relevance = relevance });
                     }
                 }
                 return _refs;

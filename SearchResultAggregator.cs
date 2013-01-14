@@ -14,13 +14,13 @@ namespace CC_CEDICT.WindowsPhone
 {
     public class SearchResultAggregator
     {
-        private Dictionary<int, IndexRecord.Reference> bucket = new Dictionary<int, IndexRecord.Reference>();
+        private Dictionary<int, IndexReference> bucket = new Dictionary<int, IndexReference>();
         private Dictionary<int, int> hitCounter = new Dictionary<int, int>();
         private int total = 0;
 
-        public void Add(List<IndexRecord.Reference> results)
+        public void Add(List<IndexReference> results)
         {
-            foreach (IndexRecord.Reference r in results)
+            foreach (IndexReference r in results)
             {
                 if (!bucket.ContainsKey(r.Index))
                 {
@@ -38,12 +38,12 @@ namespace CC_CEDICT.WindowsPhone
         }
 
         public int Count;
-        public List<IndexRecord.Reference> Results(int minRelevance=0)
+        public List<IndexReference> Results(int minRelevance=0)
         {
-            List<IndexRecord.Reference> results = new List<IndexRecord.Reference>();
+            List<IndexReference> results = new List<IndexReference>();
 
             Count = 0;
-            foreach (IndexRecord.Reference r in bucket.Values)
+            foreach (IndexReference r in bucket.Values)
             {
                 // adjust relevance based on ratio of matched words
                 r.Relevance *= hitCounter[r.Index] / total;

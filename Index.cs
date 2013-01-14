@@ -29,7 +29,7 @@ namespace CC_CEDICT.WindowsPhone
             }
         }
         
-        public List<IndexRecord.Reference> this[string key]
+        public IndexRecord this[string key]
         {
             get
             {
@@ -38,7 +38,7 @@ namespace CC_CEDICT.WindowsPhone
                 key = key.ToLower();
                 if (!lookup.ContainsKey(key))
                     lookup[key] = BinarySearch(key);
-                return lookup[key] < 0 ? null : this[lookup[key]].References;
+                return lookup[key] < 0 ? null : this[lookup[key]];
             }
         }
 
