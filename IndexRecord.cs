@@ -40,8 +40,10 @@ namespace CC_CEDICT.WindowsPhone
                     {
                         string[] fields = tuple.Split(pipe);
                         int index, relevance;
-                        Int32.TryParse(fields[0], out index);
-                        Int32.TryParse(fields[1], out relevance);
+                        // handle malformed records
+                        if (fields.Length < 2) continue;
+                        if (!Int32.TryParse(fields[0], out index)) continue;
+                        if (!Int32.TryParse(fields[1], out relevance)) continue;
                         _refs.Add(new IndexReference { Key = this.Key, Index = index, Relevance = relevance });
                     }
                 }
